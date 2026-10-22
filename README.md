@@ -29,6 +29,6 @@ make
 
 ## Status
 
-Just started; the Makefile is in but there's no code yet, so it won't build until the startup code lands.
+The linker script (`linker/stm32f407.ld`) and startup code (`src/startup.c`) are in. There's no `main()` yet, so `make` still fails at the link step; that comes with the blink.
 
 Register addresses and the memory map I'm working from are in [docs/notes.md](docs/notes.md).

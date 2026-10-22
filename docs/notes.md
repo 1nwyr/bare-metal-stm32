@@ -40,3 +40,15 @@ The chip boots from flash, which gets aliased to 0x0000 0000. The first word is 
 
 * Peripheral clocks are off after reset, so writing to GPIOD before enabling it in RCC just does nothing; no fault, no warning
 * BSRR exists so you don't need to disable interrupts around a pin toggle
+
+## What happens between reset and main
+
+1. The core reads word 0 of the vector table (at 0x0800 0000, aliased to 0) and puts it in SP; that's `_estack`, the top of RAM
+2. It reads word 1 and jumps there; that's `Reset_Handler`
+3. `Reset_Handler` copies `.data` from flash (`_sidata`) into RAM (`_sdata` to `_edata`), because initialized globals have to live in RAM but RAM is garbage at power up
+4. It zeroes `.bss` (`_sbss` to `_ebss`), because C promises uninitialized globals start at 0
+5. It calls `main()`; if that ever returns it just spins
+
+The linker script is where those symbols come from. `.data` has two addresses: where it runs (VMA, in RAM) and where it's stored (LMA, in flash); `> RAM AT > FLASH` is how you say that, and `LOADADDR(.data)` gets the flash one.
+
+Vector table entries need bit 0 set because Cortex M only runs Thumb code; gcc does that for me when I take the address of a Thumb function, so I don't have to add 1 by hand.
