@@ -1,0 +1,16 @@
+# run from the repo root with: renode renode/run.resc
+
+using sysbus
+mach create "discovery"
+machine LoadPlatformDescription @platforms/boards/stm32f4_discovery-kit.repl
+
+# Renode's LED model only logs state changes at Noisy, so turn that on for just the LED
+logLevel -1 gpioPortD.UserLED
+
+macro reset
+"""
+    sysbus LoadELF $ORIGIN/../build/firmware.elf
+"""
+runMacro $reset
+
+start

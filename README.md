@@ -29,6 +29,15 @@ make
 
 ## Status
 
-The linker script (`linker/stm32f407.ld`) and startup code (`src/startup.c`) are in. There's no `main()` yet, so `make` still fails at the link step; that comes with the blink.
+The LED blinks. `include/stm32f407.h` has the RCC and GPIO registers as structs, `src/main.c` turns on the GPIOD clock and toggles PD12 with a busy loop. The delay is just a counted loop for now so the timing is whatever it happens to be.
+
+## Run
+
+```bash
+make
+renode renode/run.resc
+```
+
+The script loads `build/firmware.elf` on Renode's Discovery kit and turns on logging for the green LED, so you see lines like `gpioPortD.UserLED: LED state changed to True` in the log.
 
 Register addresses and the memory map I'm working from are in [docs/notes.md](docs/notes.md).

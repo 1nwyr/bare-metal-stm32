@@ -40,6 +40,9 @@ The chip boots from flash, which gets aliased to 0x0000 0000. The first word is 
 
 * Peripheral clocks are off after reset, so writing to GPIOD before enabling it in RCC just does nothing; no fault, no warning
 * BSRR exists so you don't need to disable interrupts around a pin toggle
+* Register structs only work if every reserved gap is the right size; I put `_Static_assert(offsetof(...))` checks in the header so a miscount breaks the build instead of writing to the wrong register
+* `volatile` on every register field matters; without it the compiler is allowed to merge or drop writes it thinks nobody reads
+* Renode prints `PC = 0x80001F9` at start; the 1 at the end is the Thumb bit from the vector table, the real reset handler is at 0x080001F8
 
 ## What happens between reset and main
 
