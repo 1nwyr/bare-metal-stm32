@@ -1,11 +1,13 @@
 #include <stdint.h>
 #include "stm32f407.h"
+#include "clock.h"
 #include "systick.h"
 #include "uart.h"
+#include "printf.h"
 
 #define LED_PIN  12   /* PD12, the green LED on the Discovery kit */
 #define BLINK_MS 500
-#define BAUD     115200
+#define BAUD     115200UL
 
 static void led_init(void)
 {
@@ -20,20 +22,39 @@ static void led_init(void)
                  | GPIO_MODER_VAL(LED_PIN, GPIO_MODE_OUTPUT);
 }
 
+static void led_set(int on)
+{
+    GPIOD->BSRR = on ? GPIO_BSRR_SET(LED_PIN) : GPIO_BSRR_RESET(LED_PIN);
+}
+
 int main(void)
 {
     led_init();
     systick_init();
     uart_init(BAUD);
 
-    uart_puts("\nbare-metal-stm32 up\n");
+    uart_printf("\nbare-metal-stm32: sysclk %lu Hz, usart2 at %lu baud\n", SYSCLK_HZ, BAUD);
 
+    uint32_t last = millis();
+    int led_on = 0;
+
+    /*
+     * no delay_ms here; a blocking delay would mean typed characters sit unread
+     * for half a second, so the loop just keeps polling both and acts when either is ready
+     */
     while (1) {
-        GPIOD->BSRR = GPIO_BSRR_SET(LED_PIN);
-        uart_puts("led on\n");
-        delay_ms(BLINK_MS);
-        GPIOD->BSRR = GPIO_BSRR_RESET(LED_PIN);
-        uart_puts("led off\n");
-        delay_ms(BLINK_MS);
+        int c = uart_try_getc();
+        if (c >= 0) {
+            /* only echo printable ASCII as itself; anything else shows up as a dot */
+            uart_printf("rx '%c' 0x%02x\n", (c >= 0x20 && c < 0x7F) ? c : '.', c);
+        }
+
+        if (millis() - last >= BLINK_MS) {
+            /* step by the period instead of resetting to now, so time spent printing never makes the blink drift */
+            last += BLINK_MS;
+            led_on = !led_on;
+            led_set(led_on);
+            uart_printf("[%7lu ms] led %s\n", last, led_on ? "on" : "off");
+        }
     }
 }
