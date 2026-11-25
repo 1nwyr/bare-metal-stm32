@@ -39,8 +39,8 @@ int main(void)
     int led_on = 0;
 
     /*
-     * no delay_ms here; a blocking delay would mean typed characters sit unread
-     * for half a second, so the loop just keeps polling both and acts when either is ready
+     * no delay_ms here; a blocking delay would leave typed characters unread for half
+     * a second. instead every pass checks both, then sleeps until the next interrupt
      */
     while (1) {
         int c = uart_try_getc();
@@ -56,5 +56,12 @@ int main(void)
             led_set(led_on);
             uart_printf("[%7lu ms] led %s\n", last, led_on ? "on" : "off");
         }
+
+        /*
+         * SysTick wakes the core every 1 ms, so RX still gets polled a thousand times a second.
+         * a received byte waits in DR until it's read, but one that finishes arriving before
+         * then is lost (ORE), so this keeps up with typing; a pasted burst needs an RX interrupt
+         */
+        __asm volatile ("wfi");
     }
 }

@@ -4,10 +4,17 @@ using sysbus
 mach create "discovery"
 machine LoadPlatformDescription @platforms/boards/stm32f4_discovery-kit.repl
 
+# Renode's STM32F4 model clocks SysTick at 72 MHz, but the real chip runs off the 16 MHz HSI after
+# reset and the firmware never touches the PLL; without this, every "millisecond" is 4.5x too short
+nvic Frequency 16000000
+
+# the default is 100 MIPS; a 16 MHz M4 does about one instruction per cycle, so match that
+cpu PerformanceInMips 16
+
 # Renode's LED model only logs state changes at Noisy, so turn that on for just the LED
 logLevel -1 gpioPortD.UserLED
 
-# a terminal window for USART2; with --console or --hide-analyzers the lines go to the log instead
+# a terminal window for USART2; typing in it sends bytes to the firmware's RX
 showAnalyzer usart2
 
 macro reset
