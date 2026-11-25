@@ -7,6 +7,9 @@ machine LoadPlatformDescription @platforms/boards/stm32f4_discovery-kit.repl
 # Renode's LED model only logs state changes at Noisy, so turn that on for just the LED
 logLevel -1 gpioPortD.UserLED
 
+# a terminal window for USART2; with --console or --hide-analyzers the lines go to the log instead
+showAnalyzer usart2
+
 macro reset
 """
     sysbus LoadELF $ORIGIN/../build/firmware.elf

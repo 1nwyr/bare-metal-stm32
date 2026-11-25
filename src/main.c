@@ -1,9 +1,11 @@
 #include <stdint.h>
 #include "stm32f407.h"
 #include "systick.h"
+#include "uart.h"
 
 #define LED_PIN  12   /* PD12, the green LED on the Discovery kit */
 #define BLINK_MS 500
+#define BAUD     115200
 
 static void led_init(void)
 {
@@ -22,11 +24,16 @@ int main(void)
 {
     led_init();
     systick_init();
+    uart_init(BAUD);
+
+    uart_puts("\nbare-metal-stm32 up\n");
 
     while (1) {
         GPIOD->BSRR = GPIO_BSRR_SET(LED_PIN);
+        uart_puts("led on\n");
         delay_ms(BLINK_MS);
         GPIOD->BSRR = GPIO_BSRR_RESET(LED_PIN);
+        uart_puts("led off\n");
         delay_ms(BLINK_MS);
     }
 }

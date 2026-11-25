@@ -56,6 +56,17 @@ typedef struct {
     __IO uint32_t AFR[2];      /* 0x20 AFRL, 0x24 AFRH */
 } GPIO_TypeDef;
 
+/* USART, RM0090 section 30.6; USART1/2/3/6 and UART4/5 all share this layout */
+typedef struct {
+    __IO uint32_t SR;          /* 0x00 */
+    __IO uint32_t DR;          /* 0x04 */
+    __IO uint32_t BRR;         /* 0x08 */
+    __IO uint32_t CR1;         /* 0x0C */
+    __IO uint32_t CR2;         /* 0x10 */
+    __IO uint32_t CR3;         /* 0x14 */
+    __IO uint32_t GTPR;        /* 0x18 */
+} USART_TypeDef;
+
 /* SysTick is part of the Cortex-M4 core, not ST's peripherals, so it's in PM0214 (the M4 programming manual), section 4.5 */
 typedef struct {
     __IO uint32_t CTRL;        /* 0x00 */
@@ -71,11 +82,16 @@ _Static_assert(offsetof(RCC_TypeDef, BDCR) == 0x70, "RCC BDCR offset");
 _Static_assert(offsetof(RCC_TypeDef, PLLI2SCFGR) == 0x84, "RCC PLLI2SCFGR offset");
 _Static_assert(offsetof(GPIO_TypeDef, BSRR) == 0x18, "GPIO BSRR offset");
 _Static_assert(offsetof(GPIO_TypeDef, AFR) == 0x20, "GPIO AFR offset");
+_Static_assert(offsetof(USART_TypeDef, CR1) == 0x0C, "USART CR1 offset");
+_Static_assert(offsetof(USART_TypeDef, GTPR) == 0x18, "USART GTPR offset");
 _Static_assert(offsetof(SysTick_TypeDef, CALIB) == 0x0C, "SysTick CALIB offset");
 
 /* base addresses, see docs/notes.md */
 #define PERIPH_BASE     0x40000000UL
+#define APB1PERIPH_BASE PERIPH_BASE
 #define AHB1PERIPH_BASE (PERIPH_BASE + 0x00020000UL)
+
+#define USART2_BASE     (APB1PERIPH_BASE + 0x4400UL)
 
 #define GPIOA_BASE      (AHB1PERIPH_BASE + 0x0000UL)
 #define GPIOD_BASE      (AHB1PERIPH_BASE + 0x0C00UL)
@@ -84,6 +100,7 @@ _Static_assert(offsetof(SysTick_TypeDef, CALIB) == 0x0C, "SysTick CALIB offset")
 #define RCC             ((RCC_TypeDef *)RCC_BASE)
 #define GPIOA           ((GPIO_TypeDef *)GPIOA_BASE)
 #define GPIOD           ((GPIO_TypeDef *)GPIOD_BASE)
+#define USART2          ((USART_TypeDef *)USART2_BASE)
 
 /* core peripherals live in the System Control Space, same address on every Cortex-M */
 #define SYSTICK_BASE    0xE000E010UL
@@ -105,9 +122,39 @@ _Static_assert(offsetof(SysTick_TypeDef, CALIB) == 0x0C, "SysTick CALIB offset")
 #define GPIO_MODER_MASK(pin)       (0x3UL << ((pin) * 2))
 #define GPIO_MODER_VAL(pin, mode)  ((mode) << ((pin) * 2))
 
+/* PUPDR is two bits per pin too */
+#define GPIO_PUPD_NONE 0x0UL
+#define GPIO_PUPD_UP   0x1UL
+#define GPIO_PUPD_DOWN 0x2UL
+
+#define GPIO_PUPDR_MASK(pin)       (0x3UL << ((pin) * 2))
+#define GPIO_PUPDR_VAL(pin, pupd)  ((pupd) << ((pin) * 2))
+
+/* AFR is four bits per pin, split across AFR[0] (pins 0 to 7) and AFR[1] (pins 8 to 15) */
+#define GPIO_AF7_USART2 0x7UL
+
+#define GPIO_AFR_MASK(pin)         (0xFUL << (((pin) % 8) * 4))
+#define GPIO_AFR_VAL(pin, af)      ((af) << (((pin) % 8) * 4))
+
 /* BSRR: low half sets a pin, high half resets it */
 #define GPIO_BSRR_SET(pin)   (1UL << (pin))
 #define GPIO_BSRR_RESET(pin) (1UL << ((pin) + 16))
+
+/* USART_SR bits */
+#define USART_SR_PE    (1UL << 0)   /* parity error */
+#define USART_SR_FE    (1UL << 1)   /* framing error */
+#define USART_SR_NF    (1UL << 2)   /* noise */
+#define USART_SR_ORE   (1UL << 3)   /* overrun; a byte arrived before the last one was read */
+#define USART_SR_RXNE  (1UL << 5)   /* a received byte is waiting in DR */
+#define USART_SR_TC    (1UL << 6)   /* the last byte has fully left the shift register */
+#define USART_SR_TXE   (1UL << 7)   /* DR is empty, ready for the next byte */
+
+/* USART_CR1 bits */
+#define USART_CR1_RE    (1UL << 2)
+#define USART_CR1_TE    (1UL << 3)
+#define USART_CR1_M     (1UL << 12)  /* 0 = 8 data bits, 1 = 9 */
+#define USART_CR1_UE    (1UL << 13)
+#define USART_CR1_OVER8 (1UL << 15)  /* 0 = oversample by 16, which is what the baud math assumes */
 
 /* SysTick CTRL bits */
 #define SYSTICK_CTRL_ENABLE    (1UL << 0)
