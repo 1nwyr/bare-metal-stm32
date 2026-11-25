@@ -56,6 +56,14 @@ typedef struct {
     __IO uint32_t AFR[2];      /* 0x20 AFRL, 0x24 AFRH */
 } GPIO_TypeDef;
 
+/* SysTick is part of the Cortex-M4 core, not ST's peripherals, so it's in PM0214 (the M4 programming manual), section 4.5 */
+typedef struct {
+    __IO uint32_t CTRL;        /* 0x00 */
+    __IO uint32_t LOAD;        /* 0x04 */
+    __IO uint32_t VAL;         /* 0x08 */
+    __IO uint32_t CALIB;       /* 0x0C */
+} SysTick_TypeDef;
+
 /* if I miscount a reserved gap, the build fails here instead of the LED silently not blinking */
 _Static_assert(offsetof(RCC_TypeDef, AHB1ENR) == 0x30, "RCC AHB1ENR offset");
 _Static_assert(offsetof(RCC_TypeDef, APB1ENR) == 0x40, "RCC APB1ENR offset");
@@ -63,6 +71,7 @@ _Static_assert(offsetof(RCC_TypeDef, BDCR) == 0x70, "RCC BDCR offset");
 _Static_assert(offsetof(RCC_TypeDef, PLLI2SCFGR) == 0x84, "RCC PLLI2SCFGR offset");
 _Static_assert(offsetof(GPIO_TypeDef, BSRR) == 0x18, "GPIO BSRR offset");
 _Static_assert(offsetof(GPIO_TypeDef, AFR) == 0x20, "GPIO AFR offset");
+_Static_assert(offsetof(SysTick_TypeDef, CALIB) == 0x0C, "SysTick CALIB offset");
 
 /* base addresses, see docs/notes.md */
 #define PERIPH_BASE     0x40000000UL
@@ -75,6 +84,10 @@ _Static_assert(offsetof(GPIO_TypeDef, AFR) == 0x20, "GPIO AFR offset");
 #define RCC             ((RCC_TypeDef *)RCC_BASE)
 #define GPIOA           ((GPIO_TypeDef *)GPIOA_BASE)
 #define GPIOD           ((GPIO_TypeDef *)GPIOD_BASE)
+
+/* core peripherals live in the System Control Space, same address on every Cortex-M */
+#define SYSTICK_BASE    0xE000E010UL
+#define SYSTICK         ((SysTick_TypeDef *)SYSTICK_BASE)
 
 /* RCC_AHB1ENR bits */
 #define RCC_AHB1ENR_GPIOAEN  (1UL << 0)
@@ -95,5 +108,14 @@ _Static_assert(offsetof(GPIO_TypeDef, AFR) == 0x20, "GPIO AFR offset");
 /* BSRR: low half sets a pin, high half resets it */
 #define GPIO_BSRR_SET(pin)   (1UL << (pin))
 #define GPIO_BSRR_RESET(pin) (1UL << ((pin) + 16))
+
+/* SysTick CTRL bits */
+#define SYSTICK_CTRL_ENABLE    (1UL << 0)
+#define SYSTICK_CTRL_TICKINT   (1UL << 1)   /* fire the SysTick exception every time it hits 0 */
+#define SYSTICK_CTRL_CLKSOURCE (1UL << 2)   /* 1 = core clock, 0 = core clock / 8 on the STM32F4 */
+#define SYSTICK_CTRL_COUNTFLAG (1UL << 16)
+
+/* the counter is only 24 bits wide */
+#define SYSTICK_LOAD_MAX       0x00FFFFFFUL
 
 #endif
