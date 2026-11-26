@@ -4,7 +4,7 @@ Firmware for an STM32F407, written straight from the reference manual; no HAL, n
 
 I don't own the board, so everything runs in [Renode](https://renode.io), which emulates the STM32F4 Discovery kit well enough to run real firmware on it. The same binary would go on the actual chip.
 
-## Why
+## Why?
 
 Most STM32 tutorials start with the HAL, which is fine, but it hides everything. I wanted to know what actually happens between reset and `main()`, and what "turn on the clock for GPIOD" means when it's just a bit in a register.
 
@@ -15,8 +15,6 @@ Most STM32 tutorials start with the HAL, which is fine, but it hides everything.
 3. SysTick so the delay is real milliseconds and not a guess
 4. a polling UART driver on USART2
 5. a small printf on top of that UART
-
-All five are done.
 
 | File | What it is |
 |---|---|
